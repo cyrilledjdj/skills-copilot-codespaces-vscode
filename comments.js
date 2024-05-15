@@ -1,74 +1,43 @@
-// Create Web Server
-// Use Express
-// Use Node.js
-
-// Import express module
-const express = require("express");
-
-// Create an express application
+// Create web Server
+const express = require('express');
 const app = express();
+const port = 3000;
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const path = require('path');
+const commentsPath = path.join(__dirname, 'comments.json');
 
-// Use express.json() middleware to parse JSON request bodies
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Initialize comments array
-let comments = [
-    {
-        id: 1,
-        username: "Alice",
-        comment: "Hello World!",
-    },
-    {
-        id: 2,
-        username: "Bob",
-        comment: "Welcome to the world of Node.js!",
-    },
-    {
-        id: 3,
-        username: "Charlie",
-        comment: "Express.js is a great web server framework!",
-    },
-];
-
-// GET /comments
-// Return all comments
-app.get("/comments", (req, res) => {
-    // Set the Content-Type HTTP header to application/json
-    res.setHeader("Content-Type", "application/json");
-
-    // Return the comments array as a JSON response
-    res.send(comments);
+app.get('/comments', (req, res) => {
+    fs.readFile(commentsPath, (err, data) => {
+        if (err) {
+            res.status(500).send('Error reading comments file');
+            return;
+        }
+        res.send(data);
+    });
 });
 
-// POST /comments
-// Create a new comment
-app.post("/comments", (req, res) => {
-    // Get the username and comment from the request body
-    const { username, comment } = req.body;
-
-    // Get the maximum id of the comments array
-    const id = comments.reduce((maxId, comment) => {
-        return comment.id > maxId ? comment.id : maxId;
-    }, 0);
-
-    // Create a new comment object
-    const newComment = {
-        id: id + 1,
-        username: username,
-        comment: comment,
-    };
-
-    // Add the new comment object to the comments array
-    comments.push(newComment);
-
-    // Set the Content-Type HTTP header to application/json
-    res.setHeader("Content-Type", "application/json");
-
-    // Return the new comment object as a JSON response
-    res.send(newComment);
+app.post('/comments', (req, res) => {
+    const newComment = req.body;
+    fs.readFile(commentsPath, (err, data) => {
+        if (err) {
+            res.status(500).send('Error reading comments file');
+            return;
+        }
+        const comments = JSON.parse(data);
+        comments.push(newComment);
+        fs.writeFile(commentsPath, JSON.stringify(comments), err => {
+            if (err) {
+                res.status(500).send('Error writing comments file');
+                return;
+            }
+            res.send(comments);
+        });
+    });
 });
 
-// Start the web server on port 3000
-app.listen(3000, () => {
-    console.log("Server is running on http://localhost:3000");
-}); 
+app.listen(port, () => {
+    console.log(`Server listening at http://localhost:${port}`);
+});
